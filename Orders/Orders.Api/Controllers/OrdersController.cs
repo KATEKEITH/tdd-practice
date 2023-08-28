@@ -11,9 +11,21 @@ public sealed class OrdersController : Controller
     [HttpGet]
     [Produces("application/json", Type = typeof(Order[]))]
     public async Task<IEnumerable<Order>> GetOrders(
+        [FromQuery(Name = "user-id")] Guid? userId,
         [FromServices] OrdersDbContext context)
     {
-        return await context.Orders.AsNoTracking().ToListAsync();
+        if (userId == null)
+        {
+            return await context.Orders.AsNoTracking().ToListAsync();
+        }
+        else
+        {
+            return await context.Orders
+            .AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .ToListAsync();
+        }
+
     }
 
     [HttpGet("{id}")]
@@ -105,6 +117,7 @@ public sealed class OrdersController : Controller
         }
 
         order.Status = OrderStatus.Completed;
+        order.ShippedAtUtc = listenedEvent.EventTimeUtc;
         await context.SaveChangesAsync();
         return Ok();
     }
